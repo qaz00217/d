@@ -8,9 +8,13 @@
   let wasm;
   let memory;
 
-  // WASM 파일을 fetch해서 로딩
-  WebAssembly.instantiateStreaming(fetch('https://raw.githubusercontent.com/qaz00217/d/main/vector3d.wasm')
-, { env: {} })
+  // 🔽 여기다가 vector3d.wasm을 Base64로 변환해서 붙여넣기
+  const wasmBase64 = "AGFzbQEAAAABDANgAABgAAF/YAF/AAMJCAAAAAEBAQIBBAUBcAECAgUGAQGBAoECBhIDfwFBgIAEC38BQQALfwFBAAsH2gEJBm1lbW9yeQIAC19pbml0aWFsaXplAAEZX19pbmRpcmVjdF9mdW5jdGlvbl90YWJsZQEAFWVtc2NyaXB0ZW5fc3RhY2tfaW5pdAACGWVtc2NyaXB0ZW5fc3RhY2tfZ2V0X2ZyZWUAAxllbXNjcmlwdGVuX3N0YWNrX2dldF9iYXNlAAQYZW1zY3JpcHRlbl9zdGFja19nZXRfZW5kAAUZX2Vtc2NyaXB0ZW5fc3RhY2tfcmVzdG9yZQAGHGVtc2NyaXB0ZW5fc3RhY2tfZ2V0X2N1cnJlbnQABwkHAQBBAQsBAApyCAQAEAILFAACQEGBgICAAEUNABCAgICAAAsLIABBgICEgAAkgoCAgABBgICAgABBD2pBcHEkgYCAgAALDwAjgICAgAAjgYCAgABrCwgAI4KAgIAACwgAI4GAgIAACwoAIAAkgICAgAALCAAjgICAgAALAJQBD3RhcmdldF9mZWF0dXJlcwgrC2J1bGstbWVtb3J5Kw9idWxrLW1lbW9yeS1vcHQrFmNhbGwtaW5kaXJlY3Qtb3ZlcmxvbmcrCm11bHRpdmFsdWUrD211dGFibGUtZ2xvYmFscysTbm9udHJhcHBpbmctZnB0b2ludCsPcmVmZXJlbmNlLXR5cGVzKwhzaWduLWV4dA==";
+
+
+  const wasmBytes = Uint8Array.from(atob(wasmBase64), c => c.charCodeAt(0));
+
+  WebAssembly.instantiate(wasmBytes, { env: {} })
     .then(result => {
       wasm = result.instance.exports;
       memory = wasm.memory;
@@ -44,21 +48,13 @@
     add3(args) {
       if (!wasm) return 'WASM 로딩중';
 
-      // 3개의 float 공간 malloc
       const ptr = wasm._malloc(3 * 4); // float32 = 4바이트
-
-      // WASM 함수 호출
       wasm.add3(args.AX, args.AY, args.AZ,
                args.BX, args.BY, args.BZ,
                ptr);
-
-      // 메모리 읽기
       const f32 = new Float32Array(memory.buffer, ptr, 3);
       const result = `${f32[0]}, ${f32[1]}, ${f32[2]}`;
-
-      // 메모리 해제
       wasm._free(ptr);
-
       return result;
     }
   }
